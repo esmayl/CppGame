@@ -1,6 +1,4 @@
-# C plus plus game from scratch using SFML
-
-Readme Cpp Game
+# C++ game from scratch using SFML
 
 ## Setup
 
