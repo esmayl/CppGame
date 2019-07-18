@@ -5,18 +5,76 @@
 Player* player;
 
 sf::RenderTexture screenTexture;
-sf::RenderTexture backgroundTexture;
+sf::Texture backgroundTexture;
+sf::Texture wallTexture;
 sf::Sprite backgroundSprite;
+sf::Sprite currentWallSprite;
+sf::Sprite sprite;
+sf::Clock klok;
 sf::CircleShape playerCircleShape;
+sf::RectangleShape wallRectShape;
 Vector3* moveSpeed;
 const int screenWidth = 1920;
 const int screenHeight = 1080;
-sf::RectangleShape backgroundArray[screenWidth][screenHeight];
-float jumpHeight = 3;
+const int borderEdge = 10;
 float speed = 3;
-float timer = 1;
-float counter = timer;
+float time1,time2;
 float deltaTime;
+float oneSecond;
+int frameCounter = 0;
+
+// Render setup
+void CreateBackground()
+{
+  sf::RectangleShape rectangle;
+
+  screenTexture.clear();
+
+  for (size_t i = borderEdge; i < screenWidth-borderEdge-1; i++)
+  {
+    for (size_t j = borderEdge; j < screenHeight-borderEdge-1; j++)
+    {
+      rectangle.setSize(sf::Vector2f(1,1));
+      rectangle.setOutlineColor(sf::Color::Red);
+      rectangle.setOutlineThickness(1);
+      rectangle.setPosition(0+i, 0+j);
+      screenTexture.draw(rectangle);
+    }
+  }
+  screenTexture.display();
+
+  backgroundTexture = screenTexture.getTexture();
+  backgroundSprite.setTexture(backgroundTexture);
+}
+
+void CreateWalls()
+{
+  sf::Vector2f wallSize(10,10);
+  wallRectShape = sf::RectangleShape(wallSize);
+  wallRectShape.setFillColor(sf::Color::Cyan);
+  wallRectShape.setOutlineColor(sf::Color::Black);
+  wallRectShape.setOutlineThickness(1);
+
+  for (size_t i = 0; i <= screenWidth-borderEdge; i+=wallSize.x) {
+    for (size_t j = 0; j <= screenHeight-borderEdge; j+=wallSize.y)
+    {
+        if(j <= borderEdge ||i <= borderEdge || i >= screenWidth-(borderEdge*2) || j >= screenHeight-(borderEdge*2))
+        {
+            wallRectShape.setPosition(0+i,0+j);
+            screenTexture.draw(wallRectShape);
+        }
+    }
+  }
+  screenTexture.display();
+  wallTexture = screenTexture.getTexture();
+  currentWallSprite.setTexture(wallTexture);
+}
+
+// Render loops
+void DrawBackground()
+{
+  screenTexture.draw(backgroundSprite);
+}
 
 void DrawPlayer()
 {
@@ -26,40 +84,22 @@ void DrawPlayer()
   }
 }
 
-void DrawBackground()
-{
-  sf::RectangleShape rectangle;
-
-  backgroundTexture.clear();
-
-  for (size_t i = 0; i < screenWidth; i++)
-  {
-    for (size_t j = 0; j < screenHeight; j++)
-    {
-      rectangle.setSize(sf::Vector2f(1,1));
-      rectangle.setOutlineColor(sf::Color::Red);
-      rectangle.setOutlineThickness(5);
-      rectangle.setPosition(0+i, 0+j);
-      backgroundArray[i][j] = rectangle;
-    }
-  }
-
-  backgroundSprite.setTexture(backgroundTexture.getTexture());
-}
-
 void DrawWalls()
 {
-
+  screenTexture.draw(currentWallSprite);
 }
 
+// Setup
 void SetupPlayer(float playerSize = 10.f,sf::Color playerColor = sf::Color::Green)
 {
   playerCircleShape = sf::CircleShape(playerSize);
   player = new Player();
   moveSpeed = new Vector3();
   playerCircleShape.setFillColor(playerColor);
+  playerCircleShape.setPosition(screenWidth/2,screenHeight*0.75f);
 }
 
+// Loops
 void PlayerInputCheck()
 {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
@@ -83,6 +123,18 @@ void PlayerInputCheck()
   }
 }
 
+void TimeLoop()
+{
+  time2 = klok.getElapsedTime().asSeconds();
+
+  deltaTime = time2-time1;
+
+  oneSecond += deltaTime;
+
+  time1 = time2;
+
+}
+
 void PlayerSpriteMovement(Vector3* direction)
 {
     playerCircleShape.move(direction->x,direction->y);
@@ -90,34 +142,39 @@ void PlayerSpriteMovement(Vector3* direction)
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(screenWidth, screenHeight), "SFML works!");
+    sf::VideoMode temp(screenWidth,screenHeight);
+
+    sf::RenderWindow window(temp, "SFML works!" , sf::Style::Fullscreen);
 
     SetupPlayer();
 
     // render code
     screenTexture.create(screenWidth,screenHeight);
 
-    sf::Clock clock;
+    time1 = klok.getElapsedTime().asSeconds();
 
-    float time1 = clock.getElapsedTime().asSeconds();
+    CreateBackground();
+    CreateWalls();
 
-    DrawBackground();
 
     while (window.isOpen())
     {
-        float time2 = clock.getElapsedTime().asSeconds();
+        TimeLoop();
 
-        deltaTime = time2-time1;
+        time2 = time1;
 
-        std::cout << deltaTime << std::endl;
+        if(oneSecond >= 1)
+        {
+          std::cout << "One second passed, fps: " << frameCounter << std::endl;
+          oneSecond = 0;
+          frameCounter = 0;
+        }
 
-        time1 = time2;
 
         screenTexture.clear();
         moveSpeed->Clear();
 
-        screenTexture.draw(backgroundSprite);
-
+        DrawBackground();
         DrawWalls();
         DrawPlayer();
 
@@ -138,14 +195,11 @@ int main()
         window.clear();
 
         // convert to drawable
-        sf::Sprite sprite(screenTexture.getTexture());
+        sprite.setTexture(screenTexture.getTexture());
         window.draw(sprite);
         window.display();
 
-        if(counter < timer)
-        {
-          counter += 0.01;
-        }
+        frameCounter++;
     }
 
     return 0;
