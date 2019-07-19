@@ -1,205 +1,157 @@
-#include "BaseDrawable.h"
+#include "RenderHandler.h"
 #include "Player.h"
 #include <iostream>
+#include <X11/Xlib.h>   
 
 Player* player;
+RenderHandler* renderHandler;
 
-sf::RenderTexture screenTexture;
-sf::Texture backgroundTexture;
-sf::Texture wallTexture;
-sf::Sprite backgroundSprite;
-sf::Sprite currentWallSprite;
 sf::Sprite sprite;
 sf::Clock klok;
-sf::CircleShape playerCircleShape;
-sf::RectangleShape wallRectShape;
-Vector3* moveSpeed;
-const int screenWidth = 1920;
-const int screenHeight = 1080;
-const int borderEdge = 10;
-float speed = 3;
+Vector3 moveDirection;
+int screenWidth= 1920;
+int screenHeight= 1080;
+float speed = 120;
 float time1,time2;
 float deltaTime;
 float oneSecond;
+float counter,timer = 1;
 int frameCounter = 0;
-
-// Render setup
-void CreateBackground()
-{
-  sf::RectangleShape rectangle;
-
-  screenTexture.clear();
-
-  for (size_t i = borderEdge; i < screenWidth-borderEdge-1; i++)
-  {
-    for (size_t j = borderEdge; j < screenHeight-borderEdge-1; j++)
-    {
-      rectangle.setSize(sf::Vector2f(1,1));
-      rectangle.setOutlineColor(sf::Color::Red);
-      rectangle.setOutlineThickness(1);
-      rectangle.setPosition(0+i, 0+j);
-      screenTexture.draw(rectangle);
-    }
-  }
-  screenTexture.display();
-
-  backgroundTexture = screenTexture.getTexture();
-  backgroundSprite.setTexture(backgroundTexture);
-}
-
-void CreateWalls()
-{
-  sf::Vector2f wallSize(10,10);
-  wallRectShape = sf::RectangleShape(wallSize);
-  wallRectShape.setFillColor(sf::Color::Cyan);
-  wallRectShape.setOutlineColor(sf::Color::Black);
-  wallRectShape.setOutlineThickness(1);
-
-  for (size_t i = 0; i <= screenWidth-borderEdge; i+=wallSize.x) {
-    for (size_t j = 0; j <= screenHeight-borderEdge; j+=wallSize.y)
-    {
-        if(j <= borderEdge ||i <= borderEdge || i >= screenWidth-(borderEdge*2) || j >= screenHeight-(borderEdge*2))
-        {
-            wallRectShape.setPosition(0+i,0+j);
-            screenTexture.draw(wallRectShape);
-        }
-    }
-  }
-  screenTexture.display();
-  wallTexture = screenTexture.getTexture();
-  currentWallSprite.setTexture(wallTexture);
-}
-
-// Render loops
-void DrawBackground()
-{
-  screenTexture.draw(backgroundSprite);
-}
-
-void DrawPlayer()
-{
-  if(player->isAlive)
-  {
-      screenTexture.draw(playerCircleShape);
-  }
-}
-
-void DrawWalls()
-{
-  screenTexture.draw(currentWallSprite);
-}
+bool canShoot = true;
 
 // Setup
-void SetupPlayer(float playerSize = 10.f,sf::Color playerColor = sf::Color::Green)
+
+void SetupRendering()
 {
-  playerCircleShape = sf::CircleShape(playerSize);
+  renderHandler = new RenderHandler();
+  renderHandler->InitDefault(screenWidth,screenHeight);
+}
+
+void SetupPlayer(float playerSize = 10.f)
+{
   player = new Player();
-  moveSpeed = new Vector3();
-  playerCircleShape.setFillColor(playerColor);
-  playerCircleShape.setPosition(screenWidth/2,screenHeight*0.75f);
+  
+  moveDirection.Clear();
 }
 
 // Loops
 void PlayerInputCheck()
 {
+  if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && canShoot)
+  {
+    player->Shoot();
+    canShoot = false;
+  }
+
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
   {
-    moveSpeed->y = -speed;
+    moveDirection.y = -speed;
   }
 
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
   {
-    moveSpeed->x = -speed;
+    moveDirection.x = -speed;
   }
 
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
   {
-    moveSpeed->x = speed;
+    moveDirection.x = speed;
   }
 
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
   {
-    moveSpeed->y = speed;
+    moveDirection.y = speed;
   }
 }
 
 void TimeLoop()
 {
-  time2 = klok.getElapsedTime().asSeconds();
+    time2 = klok.getElapsedTime().asSeconds();
 
-  deltaTime = time2-time1;
+    deltaTime = time2-time1;
 
-  oneSecond += deltaTime;
+    oneSecond += deltaTime;
 
-  time1 = time2;
+    time1 = time2;
 
+    time2 = time1;
+
+    if(oneSecond >= 1)
+    {
+      std::cout << "One second passed, fps: " << frameCounter << std::endl;
+      oneSecond = 0;
+      frameCounter = 0;
+    }
 }
 
 void PlayerSpriteMovement(Vector3* direction)
 {
-    playerCircleShape.move(direction->x,direction->y);
+    direction->Normalize();
+
+    renderHandler->MovePlayer(direction);
 }
 
 int main()
 {
+    XInitThreads();
     sf::VideoMode temp(screenWidth,screenHeight);
 
-    sf::RenderWindow window(temp, "SFML works!" , sf::Style::Fullscreen);
+    // , sf::Style::Fullscreen
+    sf::RenderWindow window(temp, "C plus plus game" );
 
-    SetupPlayer();
-
-    // render code
-    screenTexture.create(screenWidth,screenHeight);
+    SetupRendering();
+    SetupPlayer(10.f);
 
     time1 = klok.getElapsedTime().asSeconds();
-
-    CreateBackground();
-    CreateWalls();
-
 
     while (window.isOpen())
     {
         TimeLoop();
-
-        time2 = time1;
-
-        if(oneSecond >= 1)
-        {
-          std::cout << "One second passed, fps: " << frameCounter << std::endl;
-          oneSecond = 0;
-          frameCounter = 0;
-        }
-
-
-        screenTexture.clear();
-        moveSpeed->Clear();
-
-        DrawBackground();
-        DrawWalls();
-        DrawPlayer();
-
-        // done adding to the screen
-        screenTexture.display();
+        moveDirection.Clear();
 
         PlayerInputCheck();
 
-        PlayerSpriteMovement(moveSpeed);
+        if(moveDirection.magnitude() > 0)
+        {
+          moveDirection *= deltaTime;
 
+          PlayerSpriteMovement(&moveDirection);
+        }
+
+        renderHandler->RenderLoop();
+
+        // check if the player has clicked the close button of the window
         sf::Event event;
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
+            {
                 window.close();
+            }
         }
 
         window.clear();
 
-        // convert to drawable
-        sprite.setTexture(screenTexture.getTexture());
+        // convert backbuffer to drawable
+        sprite.setTexture(renderHandler->screenTexture.getTexture());
+
+        // draw backbuffer to the screen
         window.draw(sprite);
         window.display();
 
         frameCounter++;
+
+        // shoot counter
+
+        if(counter >= timer)
+        {
+            canShoot = true;
+            counter = 0;
+        }
+        else
+        {
+            counter += deltaTime;
+        }
     }
 
     return 0;

@@ -1,1 +1,1 @@
- g++ -c ./*.cpp && g++ ./*.o -o testSfml -lsfml-graphics -lsfml-window -lsfml-system
+ g++ -c ./*.cpp -lX11 && g++ ./*.o -o testSfml -lsfml-graphics -lsfml-window -lsfml-system -lX11
