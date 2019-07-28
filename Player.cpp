@@ -3,10 +3,11 @@
 
 Player::Player()
 {
-  isAlive = true;
+    isAlive = true;
+    bulletDrawable.m_sprite = bulletSprite;
 }
 
 void Player::Shoot()
 {
-  std::cout << "Bang!";
+    std::cout << "Bang!";
 }

@@ -1,6 +1,20 @@
 #include "Vector3.h"
 #include <math.h>
 
+Vector3::Vector3()
+{
+  x=0;
+  y=0;
+  z=0;
+}
+
+Vector3::Vector3(int newX, int newY, int newZ)
+{
+  x = newX;
+  y = newY;
+  z = newZ;
+}
+
 float Vector3::magnitude()
 {
   float temp = x*x + y*y + z*z;

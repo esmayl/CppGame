@@ -1,127 +1,141 @@
 #include "RenderHandler.h"
 #include "Player.h"
+#ifndef SYSTEM_LIBS
+#define SYSTEM_LIBS
 #include <iostream>
-#include <X11/Xlib.h>   
+#include <functional>
+#include <X11/Xlib.h>
+#endif
 
 Player* player;
-RenderHandler* renderHandler;
+RenderHandler renderHandler;
+sf::CircleShape extraShape;
+sf::Sprite p;
+sf::Texture* textureHolder;
 
 sf::Sprite sprite;
-sf::Clock klok;
+sf::Clock gameClock;
 Vector3 moveDirection;
-int screenWidth= 1920;
-int screenHeight= 1080;
+int screenWidth= 800;
+int screenHeight= 600;
 float speed = 120;
-float time1,time2;
+float startTime,time2;
 float deltaTime;
 float oneSecond;
 float counter,timer = 1;
-int frameCounter = 0;
 bool canShoot = true;
 
 // Setup
 
-void SetupRendering()
-{
-  renderHandler = new RenderHandler();
-  renderHandler->InitDefault(screenWidth,screenHeight);
-}
-
 void SetupPlayer(float playerSize = 10.f)
 {
   player = new Player();
-  
+
   moveDirection.Clear();
 }
 
 // Loops
-void PlayerInputCheck()
+
+void PlayerSpriteMovement(Vector3* direction)
 {
-  if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && canShoot)
-  {
-    player->Shoot();
-    canShoot = false;
-  }
+    renderHandler.MovePlayer(direction);
+}
 
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-  {
-    moveDirection.y = -speed;
-  }
+void PlayerInputCheck(sf::RenderWindow* window)
+{  
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && canShoot)
+    {
+      player->Shoot();
+      canShoot = false;
+    }
 
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-  {
-    moveDirection.x = -speed;
-  }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+    {
+      moveDirection.y = -speed;
+    }
 
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-  {
-    moveDirection.x = speed;
-  }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+    {
+      moveDirection.x = -speed;
+    }
 
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-  {
-    moveDirection.y = speed;
-  }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+    {
+      moveDirection.x = speed;
+    }
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+    {
+      moveDirection.y = speed;
+    }
+
+    if(moveDirection.magnitude() > 0)
+    {
+        moveDirection *= deltaTime;
+
+        PlayerSpriteMovement(&moveDirection);
+    }
 }
 
 void TimeLoop()
 {
-    time2 = klok.getElapsedTime().asSeconds();
+    time2 = gameClock.getElapsedTime().asSeconds();
 
-    deltaTime = time2-time1;
+    deltaTime = time2-startTime;
 
     oneSecond += deltaTime;
 
-    time1 = time2;
+    startTime = time2;
 
-    time2 = time1;
+    time2 = startTime;
 
     if(oneSecond >= 1)
     {
-      std::cout << "One second passed, fps: " << frameCounter << std::endl;
+      std::cout << "One second passed, fps: " << renderHandler.frameCounter << std::endl;
       oneSecond = 0;
-      frameCounter = 0;
+      renderHandler.frameCounter = 0;
     }
-}
-
-void PlayerSpriteMovement(Vector3* direction)
-{
-    direction->Normalize();
-
-    renderHandler->MovePlayer(direction);
 }
 
 int main()
 {
-    XInitThreads();
+    XInitThreads(); // needed for multithreading render window
+
     sf::VideoMode temp(screenWidth,screenHeight);
 
+    renderHandler.InitDefault(temp.width,temp.height,&renderHandler);
+    
     // , sf::Style::Fullscreen
     sf::RenderWindow window(temp, "C plus plus game" );
 
-    SetupRendering();
-    SetupPlayer(10.f);
+    startTime = gameClock.getElapsedTime().asSeconds();
 
-    time1 = klok.getElapsedTime().asSeconds();
+    sf::Thread setupPlayerThread(&SetupPlayer,10.f);
+
+    setupPlayerThread.launch();
+    
+    sf::Thread setupTimeThread(&TimeLoop);
+    setupTimeThread.launch();
+
+    // sf::Thread inputThread(&PlayerInputCheck,&window);
+    // inputThread.launch();
 
     while (window.isOpen())
     {
-        TimeLoop();
         moveDirection.Clear();
 
-        PlayerInputCheck();
+        window.setActive(false);
 
-        if(moveDirection.magnitude() > 0)
-        {
-          moveDirection *= deltaTime;
+        TimeLoop();
 
-          PlayerSpriteMovement(&moveDirection);
-        }
+        renderHandler.RenderLoop(&window);
 
-        renderHandler->RenderLoop();
-
+        PlayerInputCheck(&window);        
+        
         // check if the player has clicked the close button of the window
+        // has to stay in this thread, will block the screen from closing
         sf::Event event;
+        
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
@@ -130,19 +144,7 @@ int main()
             }
         }
 
-        window.clear();
-
-        // convert backbuffer to drawable
-        sprite.setTexture(renderHandler->screenTexture.getTexture());
-
-        // draw backbuffer to the screen
-        window.draw(sprite);
-        window.display();
-
-        frameCounter++;
-
         // shoot counter
-
         if(counter >= timer)
         {
             canShoot = true;

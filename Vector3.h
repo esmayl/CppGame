@@ -3,6 +3,8 @@
 class Vector3
 {
   public:
+    Vector3();
+    Vector3(int newX, int newY, int newZ);
     float x;
     float y;
     float z;

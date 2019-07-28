@@ -1,69 +1,138 @@
 #include "RenderHandler.h"
 
 // Render setup
-void RenderHandler::InitDefault(int screenWidth, int screenHeight)
+void RenderHandler::InitDefault(int screenWidth, int screenHeight,RenderHandler* handler)
 {
+    XInitThreads();
+    
     // render code
-    screenTexture.create(screenWidth,screenHeight);
+    screenTexture.create(screenWidth, screenHeight);
 
-    CreateBackground(screenWidth,screenHeight);
-    CreateWalls(screenWidth,screenHeight);
-    SetupPlayer(screenWidth,screenHeight,10.f,sf::Color::Green);
-}
+    Vector3 test(screenWidth, screenHeight, 0);
 
-void RenderHandler::CreateBackground(int screenWidth, int screenHeight)
-{
-    sf::RectangleShape rectangle;
+    wallSize = sf::Vector2f(3,3); // Width and height of the walls
+
+    screenSize.x = screenWidth;
+    screenSize.y = screenHeight;
+
+    CreatePlayer(10.f, sf::Color::Green);
 
     screenTexture.clear();
 
-    for (size_t i = borderEdge; i < (screenWidth)-borderEdge-1; i++)
-    {
-        for (size_t j = borderEdge; j < (screenHeight)-borderEdge-1; j++)
-        {
-        rectangle.setSize(sf::Vector2f(1,1));
-        rectangle.setOutlineColor(sf::Color::Red);
-        rectangle.setOutlineThickness(1);
-        rectangle.setPosition(0+i, 0+j);
-        screenTexture.draw(rectangle);
-        }
-    }
-    screenTexture.display();
+    handler->CreateBackground();
+    handler->CreateWalls();
 
-    backgroundTexture = screenTexture.getTexture();
-    backgroundSprite.setTexture(backgroundTexture);
+    // sf::Thread bgThread(&RenderHandler::CreateBackground,handler);
+    // sf::Thread wallThread(&RenderHandler::CreateWalls,handler);
+    
+    // bgThread.launch();
+    // wallThread.launch();
+    
+    // bgThread.wait();
+    // wallThread.wait();
 }
 
-void RenderHandler::CreateWalls(int screenWidth, int screenHeight)
+void RenderHandler::ResetFrameCounter()
 {
-    sf::Vector2f wallSize(10,10);
+    frameCounter = 0;
+}
+
+void RenderHandler::CreateBackground()
+{
+    std::cout << "Drawing bg" << std::endl;
+
+    sf::RectangleShape rectangle;
+
+    mutex.lock();
+    size_t tempSizeX = wallSize.x;
+    size_t tempSizeY = wallSize.y;
+    size_t tempScreenSizeX = screenSize.x;
+    size_t tempScreenSizeY = screenSize.y;
+    mutex.unlock();
+
+    for (size_t i = wallSize.x; i < (screenSize.x) - wallSize.x - 1; i++)
+    {
+        for (size_t j = wallSize.y; j < (screenSize.y) - wallSize.y - 1; j++)
+        {
+            rectangle.setSize(sf::Vector2f(1,1));
+            rectangle.setFillColor(sf::Color::Red);
+            rectangle.setPosition(0+i, 0+j);
+            mutex.lock();
+            screenTexture.draw(rectangle);
+            mutex.unlock();
+        }
+    }
+    
+    mutex.lock();
+    screenTexture.display();
+    backgroundTexture = screenTexture.getTexture();
+    mutex.unlock();
+
+    backgroundSprite.setTexture(backgroundTexture);
+
+    std::cout << "Done drawing bg" << std::endl;
+
+    return;
+}
+
+void RenderHandler::CreateWalls()
+{
+    std::cout << "Drawing walls" << std::endl;
+
     wallRectShape = sf::RectangleShape(wallSize);
     wallRectShape.setFillColor(sf::Color::Cyan);
     wallRectShape.setOutlineColor(sf::Color::Black);
-    wallRectShape.setOutlineThickness(1);
+    wallRectShape.setOutlineThickness(0.1f);
 
-    for (size_t i = 0; i <= (screenWidth)-borderEdge; i+=wallSize.x) {
-        for (size_t j = 0; j <= (screenHeight)-borderEdge; j+=wallSize.y)
+    mutex.lock();
+    size_t tempSizeX = wallSize.x;
+    size_t tempSizeY = wallSize.y;
+    size_t tempScreenSizeX = screenSize.x;
+    size_t tempScreenSizeY = screenSize.y;
+    mutex.unlock();
+
+    // use wallSize as start instead 0, wall is offscreen at 0
+    for (size_t i = 0; i <= tempScreenSizeX - tempSizeX; i += tempSizeX) 
+    {
+        for (size_t j = 0; j <= tempScreenSizeY - tempSizeY - 1; j+= tempSizeY)
         {
-            if(j <= borderEdge ||i <= borderEdge || i >= (screenWidth)-(borderEdge*2) || j >= (screenHeight)-(borderEdge*2))
+            if(j < tempSizeY ||i < tempSizeX || i >= tempScreenSizeX - (tempSizeX*2) || j >= tempScreenSizeY - tempSizeY )
             {
                 wallRectShape.setPosition(0+i,0+j);
+    
+                mutex.lock();
                 screenTexture.draw(wallRectShape);
+                mutex.unlock();
             }
         }
     }
+
+    mutex.lock();
     screenTexture.display();
     wallTexture = screenTexture.getTexture();
+    mutex.unlock();
+
     currentWallSprite.setTexture(wallTexture);
+
+    std::cout << "Done drawing walls" << std::endl;
+    return;
 }
 
-// Setup
-void RenderHandler::SetupPlayer(int screenWidth, int screenHeight, float playerSize, sf::Color playerColor)
+void RenderHandler::CreatePlayer(float playerSize, sf::Color playerColor)
 {
-  playerCircleShape = sf::CircleShape(playerSize);
- 
-  playerCircleShape.setFillColor(playerColor);
-  playerCircleShape.setPosition((screenWidth)/2,(screenHeight)*0.75f);
+    playerCircleShape = sf::CircleShape(playerSize);
+
+    playerCircleShape.setFillColor(playerColor);
+    playerCircleShape.setPosition((screenSize.x)/2,(screenSize.y)*0.75f);
+}
+
+void RenderHandler::CreateSprite(sf::Texture shapeToDraw, sf::Vector2f& pos)
+{
+    sf::Sprite temp;
+    temp.setTexture(sf::Texture(shapeToDraw));
+    temp.setPosition(pos);
+
+    // spriteListToDraw.AddToList(temp);
 }
 
 // Loops
@@ -72,7 +141,6 @@ void RenderHandler::MovePlayer(Vector3* direction)
     playerCircleShape.move(direction->x,direction->y);
 }
 
-// Render loops
 void RenderHandler::DrawBackground()
 {
     screenTexture.draw(backgroundSprite);
@@ -88,14 +156,31 @@ void RenderHandler::DrawPlayer()
     screenTexture.draw(playerCircleShape);
 }
 
-void RenderHandler::RenderLoop()
+void RenderHandler::DrawEnemies()
 {
+    return;
+}
+
+void RenderHandler::RenderLoop(sf::RenderWindow* mainWindow)
+{
+    mainWindow->clear();
+
     screenTexture.clear();
 
     DrawBackground();
     DrawWalls();
     DrawPlayer();
+    DrawEnemies();
 
-    screenTexture.display();    
+    screenTexture.display();
+
+    // convert backbuffer to drawable
+    sprite.setTexture(screenTexture.getTexture());
+
+    // draw backbuffer to the screen
+    mainWindow->draw(sprite);
+    mainWindow->display();
+    
+    frameCounter++;
 }
 
