@@ -16,9 +16,9 @@ sf::Texture* textureHolder;
 sf::Sprite sprite;
 sf::Clock gameClock;
 Vector3 moveDirection;
-int screenWidth= 800;
-int screenHeight= 600;
-float speed = 120;
+int screenWidth = 800;
+int screenHeight = 600;
+float speed = 3;
 float startTime,time2;
 float deltaTime;
 float oneSecond;
@@ -43,6 +43,8 @@ void PlayerSpriteMovement(Vector3* direction)
 
 void PlayerInputCheck(sf::RenderWindow* window)
 {  
+    moveDirection.Clear();
+
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && canShoot)
     {
       player->Shoot();
@@ -71,14 +73,14 @@ void PlayerInputCheck(sf::RenderWindow* window)
 
     if(moveDirection.magnitude() > 0)
     {
-        moveDirection *= deltaTime;
-
         PlayerSpriteMovement(&moveDirection);
     }
 }
 
-void TimeLoop()
+void TimeLoop(sf::RenderWindow* window)
 {
+  while(window->isOpen())
+  {
     time2 = gameClock.getElapsedTime().asSeconds();
 
     deltaTime = time2-startTime;
@@ -95,6 +97,7 @@ void TimeLoop()
       oneSecond = 0;
       renderHandler.frameCounter = 0;
     }
+  }
 }
 
 int main()
@@ -111,10 +114,9 @@ int main()
     startTime = gameClock.getElapsedTime().asSeconds();
 
     sf::Thread setupPlayerThread(&SetupPlayer,10.f);
-
     setupPlayerThread.launch();
     
-    sf::Thread setupTimeThread(&TimeLoop);
+    sf::Thread setupTimeThread(&TimeLoop,&window);
     setupTimeThread.launch();
 
     // sf::Thread inputThread(&PlayerInputCheck,&window);
@@ -122,11 +124,7 @@ int main()
 
     while (window.isOpen())
     {
-        moveDirection.Clear();
-
         window.setActive(false);
-
-        TimeLoop();
 
         renderHandler.RenderLoop(&window);
 
@@ -155,6 +153,9 @@ int main()
             counter += deltaTime;
         }
     }
+
+    setupTimeThread.terminate();
+    setupPlayerThread.terminate();
 
     return 0;
 }

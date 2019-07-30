@@ -1,5 +1,4 @@
 #include "Vector3.h"
-#include <math.h>
 
 Vector3::Vector3()
 {
@@ -38,6 +37,16 @@ void Vector3::Normalize()
   z = z/temp;
 }
 
+std::string Vector3::ToString()
+{
+  std::string temp = std::to_string(x);
+  
+  temp += std::to_string(y);
+  temp += std::to_string(z);
+
+  return temp;
+}
+
 Vector3 Vector3::operator *=(float times)
 {
   x *= times;
@@ -52,6 +61,24 @@ Vector3 Vector3::operator *=(int times)
   x *= times;
   y *= times;
   z *= times;
+
+  return *this;
+}
+
+Vector3 Vector3::operator /= (float times)
+{
+  x /= times;
+  y /= times;
+  z /= times;
+
+  return *this;
+}
+
+Vector3 Vector3::operator /= (int times)
+{
+  x /= times;
+  y /= times;
+  z /= times;
 
   return *this;
 }

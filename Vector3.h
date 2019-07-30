@@ -1,5 +1,9 @@
 #ifndef VECTOR3_H
 #define VECTOR3_H
+#include <iostream>
+#include <string>
+#include <math.h>
+
 class Vector3
 {
   public:
@@ -11,7 +15,10 @@ class Vector3
     float magnitude();
     void Normalize();
     void Clear();
+    std::string ToString();
     Vector3 operator *=(float times);
     Vector3 operator *=(int times);
+    Vector3 operator /=(float times);
+    Vector3 operator /=(int times);
 };
 #endif
