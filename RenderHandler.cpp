@@ -8,7 +8,7 @@ void RenderHandler::InitDefault(int screenWidth, int screenHeight,RenderHandler*
     // render code
     screenTexture.create(screenWidth, screenHeight);
 
-    Vector3 test(screenWidth, screenHeight, 0);
+    sf::Vector2f test(screenWidth, screenHeight);
 
     wallSize = sf::Vector2f(3,3); // Width and height of the walls
 
@@ -126,19 +126,28 @@ void RenderHandler::CreatePlayer(float playerSize, sf::Color playerColor)
     playerCircleShape.setPosition((screenSize.x)/2,(screenSize.y)*0.75f);
 }
 
-void RenderHandler::CreateSprite(sf::Texture shapeToDraw, sf::Vector2f& pos)
+void RenderHandler::CreateSprite(sf::Texture shapeToDraw, sf::Vector2f* pos)
 {
     sf::Sprite temp;
     temp.setTexture(sf::Texture(shapeToDraw));
-    temp.setPosition(pos);
+    temp.setPosition(*pos);
 
     // spriteListToDraw.AddToList(temp);
 }
 
-// Loops
-void RenderHandler::MovePlayer(Vector3* direction)
+void RenderHandler::SpawnEnemies()
 {
-    playerCircleShape.move(direction->x,direction->y);
+
+}
+
+// Loops
+void RenderHandler::MovePlayer(sf::Vector2f* direction)
+{
+    sf::Vector2f currentPos = playerCircleShape.getPosition();
+    if(currentPos.x > wallSize.x - direction->x && currentPos.y > wallSize.y - direction->y && currentPos.x < (screenSize.x - (direction->x*8) - wallSize.x) && currentPos.y < (screenSize.y-(direction->y*8)-wallSize.y))
+    {
+        playerCircleShape.move(direction->x,direction->y);
+    }
 }
 
 void RenderHandler::DrawBackground()
@@ -171,6 +180,8 @@ void RenderHandler::RenderLoop(sf::RenderWindow* mainWindow)
     DrawWalls();
     DrawPlayer();
     DrawEnemies();
+
+    SpawnEnemies();
 
     screenTexture.display();
 

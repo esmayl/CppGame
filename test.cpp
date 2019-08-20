@@ -1,11 +1,12 @@
 #include "RenderHandler.h"
-#include "Player.h"
 #ifndef SYSTEM_LIBS
 #define SYSTEM_LIBS
 #include <iostream>
 #include <functional>
 #include <X11/Xlib.h>
+#include "math.h"
 #endif
+#include "Player.h"
 
 Player* player;
 RenderHandler renderHandler;
@@ -15,7 +16,7 @@ sf::Texture* textureHolder;
 
 sf::Sprite sprite;
 sf::Clock gameClock;
-Vector3 moveDirection;
+sf::Vector2f moveDirection;
 int screenWidth = 800;
 int screenHeight = 600;
 float speed = 3;
@@ -31,19 +32,20 @@ void SetupPlayer(float playerSize = 10.f)
 {
   player = new Player();
 
-  moveDirection.Clear();
+  moveDirection = sf::Vector2f(0,0);
 }
 
 // Loops
 
-void PlayerSpriteMovement(Vector3* direction)
+void PlayerSpriteMovement(sf::Vector2f* direction)
 {
     renderHandler.MovePlayer(direction);
 }
 
 void PlayerInputCheck(sf::RenderWindow* window)
 {  
-    moveDirection.Clear();
+    moveDirection.x = 0;
+    moveDirection.y = 0;
 
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && canShoot)
     {
@@ -70,8 +72,9 @@ void PlayerInputCheck(sf::RenderWindow* window)
     {
       moveDirection.y = speed;
     }
-
-    if(moveDirection.magnitude() > 0)
+    
+    
+    if(std::abs(moveDirection.x) > 0 || std::abs(moveDirection.y) > 0)
     {
         PlayerSpriteMovement(&moveDirection);
     }
@@ -119,16 +122,13 @@ int main()
     sf::Thread setupTimeThread(&TimeLoop,&window);
     setupTimeThread.launch();
 
-    // sf::Thread inputThread(&PlayerInputCheck,&window);
-    // inputThread.launch();
-
     while (window.isOpen())
     {
         window.setActive(false);
 
-        renderHandler.RenderLoop(&window);
-
         PlayerInputCheck(&window);        
+
+        renderHandler.RenderLoop(&window);
         
         // check if the player has clicked the close button of the window
         // has to stay in this thread, will block the screen from closing

@@ -5,8 +5,10 @@
 #include <SFML/Graphics/RenderStates.hpp>
 #endif
 
-
-class BaseDrawable : public sf::Shape
+class Enemy
 {
-
+    public:
+        sf::Texture enemyTexture;
+        sf::Vector2f currentPos;
+        void Move(sf::Vector2f* moveDir);
 };

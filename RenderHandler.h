@@ -1,6 +1,4 @@
-#include "Vector3.h"
-#include "SpriteList.h"
-#include <iostream>
+#include "Enemy.h"
 
 #ifndef SFML_LIBS
 #define SFML_LIBS
@@ -29,15 +27,17 @@ class RenderHandler
         sf::RectangleShape wallRectShape;
         sf::Mutex mutex;
         sf::Vector2f wallSize;
-        Vector3 screenSize;
+        sf::Vector2f screenSize;
+        std::vector<Enemy> enemies;
         int frameCounter = 0;         
         void InitDefault(int screenWidth, int screenHeight, RenderHandler* handler);
         void ResetFrameCounter();
         void RenderLoop(sf::RenderWindow* mainWindow);
-        void MovePlayer(Vector3* direction);
+        void MovePlayer(sf::Vector2f* direction);
         void CreateWalls();
         void CreateBackground();
-        void CreateSprite(sf::Texture spriteToDraw,sf::Vector2f& pos);
+        void CreateSprite(sf::Texture spriteToDraw,sf::Vector2f* pos);
+        void SpawnEnemies();
         void DrawEnemies();
         void SetWindow(sf::RenderWindow* newWindow);
     private:
