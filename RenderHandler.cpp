@@ -4,13 +4,13 @@
 void RenderHandler::InitDefault(int screenWidth, int screenHeight,RenderHandler* handler)
 {
     XInitThreads();
-    
+
     // render code
     screenTexture.create(screenWidth, screenHeight);
 
     sf::Vector2f test(screenWidth, screenHeight);
 
-    wallSize = sf::Vector2f(3,3); // Width and height of the walls
+    wallSize = sf::Vector2f(3 ,3); // Width and height of the walls
 
     screenSize.x = screenWidth;
     screenSize.y = screenHeight;
@@ -24,10 +24,10 @@ void RenderHandler::InitDefault(int screenWidth, int screenHeight,RenderHandler*
 
     // sf::Thread bgThread(&RenderHandler::CreateBackground,handler);
     // sf::Thread wallThread(&RenderHandler::CreateWalls,handler);
-    
+
     // bgThread.launch();
     // wallThread.launch();
-    
+
     // bgThread.wait();
     // wallThread.wait();
 }
@@ -44,25 +44,31 @@ void RenderHandler::CreateBackground()
     sf::RectangleShape rectangle;
 
     mutex.lock();
-    size_t tempSizeX = wallSize.x;
-    size_t tempSizeY = wallSize.y;
     size_t tempScreenSizeX = screenSize.x;
     size_t tempScreenSizeY = screenSize.y;
     mutex.unlock();
 
-    for (size_t i = wallSize.x; i < (screenSize.x) - wallSize.x - 1; i++)
-    {
-        for (size_t j = wallSize.y; j < (screenSize.y) - wallSize.y - 1; j++)
-        {
-            rectangle.setSize(sf::Vector2f(1,1));
-            rectangle.setFillColor(sf::Color::Red);
-            rectangle.setPosition(0+i, 0+j);
-            mutex.lock();
-            screenTexture.draw(rectangle);
-            mutex.unlock();
-        }
-    }
-    
+    // for (size_t i = wallSize.x; i < (screenSize.x) - wallSize.x - 1; i++)
+    // {
+    //     for (size_t j = wallSize.y; j < (screenSize.y) - wallSize.y - 1; j++)
+    //     {
+    //         rectangle.setSize(sf::Vector2f(1,1));
+    //         rectangle.setFillColor(sf::Color::Red);
+    //         rectangle.setPosition(0+i, 0+j);
+    //         mutex.lock();
+    //         screenTexture.draw(rectangle);
+    //         mutex.unlock();
+    //     }
+    // }
+
+    rectangle.setSize(sf::Vector2f(tempScreenSizeX,tempScreenSizeY));
+    rectangle.setFillColor(sf::Color::Red);
+    rectangle.setPosition(0,0);
+
+    mutex.lock();
+    screenTexture.draw(rectangle);
+    mutex.unlock();
+
     mutex.lock();
     screenTexture.display();
     backgroundTexture = screenTexture.getTexture();
@@ -81,9 +87,8 @@ void RenderHandler::CreateWalls()
 
     wallRectShape = sf::RectangleShape(wallSize);
     wallRectShape.setFillColor(sf::Color::Cyan);
-    wallRectShape.setOutlineColor(sf::Color::Black);
-    wallRectShape.setOutlineThickness(0.1f);
 
+    //Temporary create variables to make threading work
     mutex.lock();
     size_t tempSizeX = wallSize.x;
     size_t tempSizeY = wallSize.y;
@@ -92,14 +97,14 @@ void RenderHandler::CreateWalls()
     mutex.unlock();
 
     // use wallSize as start instead 0, wall is offscreen at 0
-    for (size_t i = 0; i <= tempScreenSizeX - tempSizeX; i += tempSizeX) 
+    for (size_t i = 0; i <= tempScreenSizeX - tempSizeX; i += tempSizeX)
     {
         for (size_t j = 0; j <= tempScreenSizeY - tempSizeY - 1; j+= tempSizeY)
         {
             if(j < tempSizeY ||i < tempSizeX || i >= tempScreenSizeX - (tempSizeX*2) || j >= tempScreenSizeY - tempSizeY )
             {
                 wallRectShape.setPosition(0+i,0+j);
-    
+
                 mutex.lock();
                 screenTexture.draw(wallRectShape);
                 mutex.unlock();
@@ -144,7 +149,14 @@ void RenderHandler::SpawnEnemies()
 void RenderHandler::MovePlayer(sf::Vector2f* direction)
 {
     sf::Vector2f currentPos = playerCircleShape.getPosition();
-    if(currentPos.x > wallSize.x - direction->x && currentPos.y > wallSize.y - direction->y && currentPos.x < (screenSize.x - (direction->x*8) - wallSize.x) && currentPos.y < (screenSize.y-(direction->y*8)-wallSize.y))
+
+
+    sf::Vector2f border = screenSize;
+
+    border.x -= wallSize.x;
+    border.y -= wallSize.y;
+
+    if(currentPos.x + direction->x < border.x && currentPos.y + direction->y < border.y && currentPos.x + direction->x > 0 && currentPos.y + direction->y > 0)
     {
         playerCircleShape.move(direction->x,direction->y);
     }
@@ -191,7 +203,6 @@ void RenderHandler::RenderLoop(sf::RenderWindow* mainWindow)
     // draw backbuffer to the screen
     mainWindow->draw(sprite);
     mainWindow->display();
-    
+
     frameCounter++;
 }
-

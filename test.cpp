@@ -19,7 +19,7 @@ sf::Clock gameClock;
 sf::Vector2f moveDirection;
 int screenWidth = 800;
 int screenHeight = 600;
-float speed = 3;
+float speed = 1;
 float startTime,time2;
 float deltaTime;
 float oneSecond;
@@ -37,13 +37,8 @@ void SetupPlayer(float playerSize = 10.f)
 
 // Loops
 
-void PlayerSpriteMovement(sf::Vector2f* direction)
-{
-    renderHandler.MovePlayer(direction);
-}
-
 void PlayerInputCheck(sf::RenderWindow* window)
-{  
+{
     moveDirection.x = 0;
     moveDirection.y = 0;
 
@@ -53,30 +48,30 @@ void PlayerInputCheck(sf::RenderWindow* window)
       canShoot = false;
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
     {
       moveDirection.y = -speed;
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
     {
       moveDirection.x = -speed;
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
     {
       moveDirection.x = speed;
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
     {
       moveDirection.y = speed;
     }
-    
-    
+
+
     if(std::abs(moveDirection.x) > 0 || std::abs(moveDirection.y) > 0)
     {
-        PlayerSpriteMovement(&moveDirection);
+        renderHandler.MovePlayer(&moveDirection);
     }
 }
 
@@ -90,6 +85,8 @@ void TimeLoop(sf::RenderWindow* window)
 
     oneSecond += deltaTime;
 
+    renderHandler.deltaTime = deltaTime;
+
     startTime = time2;
 
     time2 = startTime;
@@ -97,8 +94,9 @@ void TimeLoop(sf::RenderWindow* window)
     if(oneSecond >= 1)
     {
       std::cout << "One second passed, fps: " << renderHandler.frameCounter << std::endl;
+      std::cout << "Delta time: " << renderHandler.deltaTime << std::endl;
       oneSecond = 0;
-      renderHandler.frameCounter = 0;
+      renderHandler.ResetFrameCounter();
     }
   }
 }
@@ -110,7 +108,7 @@ int main()
     sf::VideoMode temp(screenWidth,screenHeight);
 
     renderHandler.InitDefault(temp.width,temp.height,&renderHandler);
-    
+
     // , sf::Style::Fullscreen
     sf::RenderWindow window(temp, "C plus plus game" );
 
@@ -118,7 +116,7 @@ int main()
 
     sf::Thread setupPlayerThread(&SetupPlayer,10.f);
     setupPlayerThread.launch();
-    
+
     sf::Thread setupTimeThread(&TimeLoop,&window);
     setupTimeThread.launch();
 
@@ -126,14 +124,14 @@ int main()
     {
         window.setActive(false);
 
-        PlayerInputCheck(&window);        
+        PlayerInputCheck(&window);
 
         renderHandler.RenderLoop(&window);
-        
+
         // check if the player has clicked the close button of the window
         // has to stay in this thread, will block the screen from closing
         sf::Event event;
-        
+
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)

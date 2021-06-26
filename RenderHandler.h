@@ -22,14 +22,15 @@ class RenderHandler
         sf::Texture wallTexture;
         sf::Sprite backgroundSprite;
         sf::Sprite currentWallSprite;
-        sf::Sprite sprite;        
+        sf::Sprite sprite;
         sf::CircleShape playerCircleShape;
         sf::RectangleShape wallRectShape;
         sf::Mutex mutex;
         sf::Vector2f wallSize;
         sf::Vector2f screenSize;
         std::vector<Enemy> enemies;
-        int frameCounter = 0;         
+        int frameCounter = 0;
+        float deltaTime = 0;         
         void InitDefault(int screenWidth, int screenHeight, RenderHandler* handler);
         void ResetFrameCounter();
         void RenderLoop(sf::RenderWindow* mainWindow);
