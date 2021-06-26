@@ -12,6 +12,7 @@
 #include <iostream>
 #include <functional>
 #include <X11/Xlib.h>
+#include <random>
 #endif
 
 class RenderHandler
@@ -28,9 +29,10 @@ class RenderHandler
         sf::Mutex mutex;
         sf::Vector2f wallSize;
         sf::Vector2f screenSize;
+        float playerSize;
         std::vector<Enemy> enemies;
         int frameCounter = 0;
-        float deltaTime = 0;         
+        float deltaTime = 0;
         void InitDefault(int screenWidth, int screenHeight, RenderHandler* handler);
         void ResetFrameCounter();
         void RenderLoop(sf::RenderWindow* mainWindow);

@@ -94,7 +94,6 @@ void TimeLoop(sf::RenderWindow* window)
     if(oneSecond >= 1)
     {
       std::cout << "One second passed, fps: " << renderHandler.frameCounter << std::endl;
-      std::cout << "Delta time: " << renderHandler.deltaTime << std::endl;
       oneSecond = 0;
       renderHandler.ResetFrameCounter();
     }
@@ -134,6 +133,16 @@ int main()
 
         while (window.pollEvent(event))
         {
+          if (event.type == sf::Event::Resized) {
+                window.setView(sf::View(sf::FloatRect(0, 0, event.size.width, event.size.height)));
+                screenWidth = event.size.width;
+                screenHeight =  event.size.height;
+
+                temp.width = screenWidth;
+                temp.height = screenHeight;
+
+                renderHandler.InitDefault(temp.width,temp.height,&renderHandler);
+            }
             if (event.type == sf::Event::Closed)
             {
                 window.close();

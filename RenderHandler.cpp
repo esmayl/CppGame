@@ -5,17 +5,17 @@ void RenderHandler::InitDefault(int screenWidth, int screenHeight,RenderHandler*
 {
     XInitThreads();
 
+    playerSize = 10;
+
     // render code
     screenTexture.create(screenWidth, screenHeight);
 
-    sf::Vector2f test(screenWidth, screenHeight);
-
-    wallSize = sf::Vector2f(3 ,3); // Width and height of the walls
+    wallSize = sf::Vector2f(6 ,6); // Width and height of the walls
 
     screenSize.x = screenWidth;
     screenSize.y = screenHeight;
 
-    CreatePlayer(10.f, sf::Color::Green);
+    CreatePlayer(playerSize, sf::Color::Green);
 
     screenTexture.clear();
 
@@ -96,21 +96,51 @@ void RenderHandler::CreateWalls()
     size_t tempScreenSizeY = screenSize.y;
     mutex.unlock();
 
-    // use wallSize as start instead 0, wall is offscreen at 0
-    for (size_t i = 0; i <= tempScreenSizeX - tempSizeX; i += tempSizeX)
-    {
-        for (size_t j = 0; j <= tempScreenSizeY - tempSizeY - 1; j+= tempSizeY)
-        {
-            if(j < tempSizeY ||i < tempSizeX || i >= tempScreenSizeX - (tempSizeX*2) || j >= tempScreenSizeY - tempSizeY )
-            {
-                wallRectShape.setPosition(0+i,0+j);
+    // for (size_t i = 0; i <= tempScreenSizeX - tempSizeX; i += tempSizeX)
+    // {
+    //     for (size_t j = 0; j <= tempScreenSizeY - tempSizeY; j+= tempSizeY)
+    //     {
+    //         //Use tempSizeX to indicate a wall has to be drawn
+    //         if(j < tempSizeY ||i < tempSizeX || i >= tempScreenSizeX - tempSizeX || j >= tempScreenSizeY - tempSizeY )
+    //         {
+    //             wallRectShape.setPosition(0+i,0+j);
+    //             wallRectShape.setSize(sf::Vector2f(tempSizeX,tempSizeY));
+    //
+    //             mutex.lock();
+    //             screenTexture.draw(wallRectShape);
+    //             mutex.unlock();
+    //         }
+    //     }
+    // }
 
-                mutex.lock();
-                screenTexture.draw(wallRectShape);
-                mutex.unlock();
-            }
-        }
-    }
+    wallRectShape.setPosition(0,0);
+    wallRectShape.setSize(sf::Vector2f(tempScreenSizeX,tempSizeY));
+
+    mutex.lock();
+    screenTexture.draw(wallRectShape);
+    mutex.unlock();
+
+    wallRectShape.setPosition(0,0);
+    wallRectShape.setSize(sf::Vector2f(tempSizeX,tempScreenSizeY));
+
+    mutex.lock();
+    screenTexture.draw(wallRectShape);
+    mutex.unlock();
+
+    wallRectShape.setPosition(tempScreenSizeX-tempSizeX,0);
+    wallRectShape.setSize(sf::Vector2f(tempSizeX,tempScreenSizeY));
+
+    mutex.lock();
+    screenTexture.draw(wallRectShape);
+    mutex.unlock();
+
+    wallRectShape.setPosition(0,tempScreenSizeY-tempSizeY);
+    wallRectShape.setSize(sf::Vector2f(tempScreenSizeX,tempSizeY));
+
+    mutex.lock();
+    screenTexture.draw(wallRectShape);
+    mutex.unlock();
+
 
     mutex.lock();
     screenTexture.display();
@@ -123,9 +153,9 @@ void RenderHandler::CreateWalls()
     return;
 }
 
-void RenderHandler::CreatePlayer(float playerSize, sf::Color playerColor)
+void RenderHandler::CreatePlayer(float pSize, sf::Color playerColor)
 {
-    playerCircleShape = sf::CircleShape(playerSize);
+    playerCircleShape = sf::CircleShape(pSize);
 
     playerCircleShape.setFillColor(playerColor);
     playerCircleShape.setPosition((screenSize.x)/2,(screenSize.y)*0.75f);
@@ -142,6 +172,26 @@ void RenderHandler::CreateSprite(sf::Texture shapeToDraw, sf::Vector2f* pos)
 
 void RenderHandler::SpawnEnemies()
 {
+    std::random_device rd; // obtain a random number from hardware
+    std::mt19937 gen(rd()); // seed the generator
+    std::uniform_int_distribution<> distr(playerSize*3, screenSize.x); // define the range
+
+    std::uniform_int_distribution<> distr2(playerSize*3, screenSize.y); // define the range
+
+    for (size_t i = 0; i < 10; i++)
+    {
+      sf::RectangleShape enemy = sf::RectangleShape(sf::Vector2f(playerSize,playerSize));
+
+      enemy.setFillColor(sf::Color::Black);
+      enemy.setPosition(distr(gen),distr2(gen));
+
+      //Add enemy to list
+      //Drawn enemies from list
+
+      screenTexture.draw(enemy);
+    }
+
+
 
 }
 
@@ -156,9 +206,12 @@ void RenderHandler::MovePlayer(sf::Vector2f* direction)
     border.x -= wallSize.x;
     border.y -= wallSize.y;
 
-    if(currentPos.x + direction->x < border.x && currentPos.y + direction->y < border.y && currentPos.x + direction->x > 0 && currentPos.y + direction->y > 0)
+    border.x -= playerSize;
+    border.y -= playerSize;
+
+    if(currentPos.x + direction->x < border.x && currentPos.y + direction->y < border.y && currentPos.x + direction->x > wallSize.x && currentPos.y + direction->y > wallSize.y)
     {
-        playerCircleShape.move(direction->x,direction->y);
+        playerCircleShape.move(direction->x,direction->y); //Not able to move in fractions of an int
     }
 }
 
